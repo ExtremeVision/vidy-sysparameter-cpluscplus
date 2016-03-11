@@ -9,13 +9,13 @@ int main(int argc,char* argv[]){
 
   std::vector<vidy::AreaDetail> area_details;
   if(!sysparameter->GetAreaDetail(&area_details)){
-    sysparameter->GetLastError();
+    std::cout<<sysparameter->GetLastError()<<std::endl;
     return 0;
   }
 
   sysparameter->PrintAreaDetail(area_details);
 
-  delete sysparameter;
+  //delete sysparameter;
 
   return 1; 
 }

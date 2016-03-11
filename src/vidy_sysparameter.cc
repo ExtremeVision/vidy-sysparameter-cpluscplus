@@ -9,11 +9,9 @@ namespace vidy{
 VSysParameter::VSysParameter(){
   last_error_string = NO_ERROR;
   pJson = NULL;
-  pSub = NULL;
 }
 
 VSysParameter::~VSysParameter(){
-  cJSON_Delete(pSub);
   cJSON_Delete(pJson);
 }
 
@@ -40,12 +38,17 @@ int VSysParameter::Init(std::string url,int cid){
 }
 
 int VSysParameter::GetPara(std::string key_name,std::string* value){
-  pSub = cJSON_GetObjectItem(pJson,key_name.c_str());
+  cJSON* pSub = cJSON_GetObjectItem(pJson,key_name.c_str());
   if(NULL == pSub){
     last_error_string = key_name;
     last_error_string += " parse error.";
     return 0;
   }else{
+    if(!pSub->valuestring){
+      last_error_string = key_name;
+      last_error_string += " null.";
+      return 0;
+    }
     (*value) = pSub->valuestring;
     return 1;
   }
@@ -109,26 +112,31 @@ int VSysParameter::GetDoorDetailPoints(int frame_width,int frame_height,std::str
 
 }
 
-int VSysParameter::GetDoorDetail(DoorDetail* door_detail,int frame_width,int frame_height){
-  cJSON* list = cJSON_GetObjectItem(pJson,"door_way_detail");
-  if(NULL==list){
-    last_error_string = "door_way_detail parse error.";
+int VSysParameter::GetDoorDetail(std::vector<DoorDetail>* door_details,int frame_width,int frame_height){
+  cJSON* pJsonArray = cJSON_GetObjectItem(pJson,"door_way_detail");
+  if(NULL==pJsonArray){
+    last_error_string = "no door_way_detail or parse error.";
     return 0;
   }
-  pSub = cJSON_GetObjectItem(list,"path_id");
-  (*door_detail).path_id = atoi(pSub->valuestring);
-  pSub = cJSON_GetObjectItem(list,"type_id");
-  (*door_detail).type_id = atoi(pSub->valuestring);
-  pSub = cJSON_GetObjectItem(list,"cb_type");
-  (*door_detail).cb_type = atoi(pSub->valuestring);
-  pSub = cJSON_GetObjectItem(list,"detail");
-  Doorline _doorline;
-  if(this->GetDoorDetailPoints(frame_width,frame_height,pSub->valuestring,&_doorline)){
-    (*door_detail).detail = _doorline;
+  cJSON* pSub = NULL;
+  cJSON* list = pJsonArray->child;
+  while(list!=NULL){
+    DoorDetail door_detail;
+    pSub = cJSON_GetObjectItem(list,"path_id");
+    door_detail.path_id = atoi(pSub->valuestring);
+    pSub = cJSON_GetObjectItem(list,"type_id");
+    door_detail.type_id = atoi(pSub->valuestring);
+    pSub = cJSON_GetObjectItem(list,"cb_type");
+    door_detail.cb_type = atoi(pSub->valuestring);
+    pSub = cJSON_GetObjectItem(list,"detail");
+    Doorline _doorline;
+    if(this->GetDoorDetailPoints(frame_width,frame_height,pSub->valuestring,&_doorline)){
+      door_detail.detail = _doorline;
+    }
+    (*door_details).push_back(door_detail);
+    list = list->next;
   }
-  cJSON_Delete(list);
   return 1;
-
 }
 
 int VSysParameter::GetPathDetailPoints(int frame_width,int frame_height,std::string pathway_detail_string,Pathway* path_detail){
@@ -189,9 +197,10 @@ int VSysParameter::GetPathDetailPoints(int frame_width,int frame_height,std::str
 int VSysParameter::GetPathDetail(std::vector<PathDetail>* path_details,int frame_width,int frame_height){
   cJSON* pJsonArray = cJSON_GetObjectItem(pJson,"path_detail");
   if(NULL==pJsonArray){
-    last_error_string = "path_detail parse error.";
+    last_error_string = "no pathway detail or parse error.";
     return 0;
   }
+  cJSON* pSub = NULL;
   cJSON* list=pJsonArray->child;
   while(list!=NULL){
     cJSON* group = list->child;
@@ -212,15 +221,12 @@ int VSysParameter::GetPathDetail(std::vector<PathDetail>* path_details,int frame
       group = group->next;
     }
     list = list->next;
-    cJSON_Delete(group);
   }
-  cJSON_Delete(list);
-  cJSON_Delete(pJsonArray);
   return 1;
 }
 
 int VSysParameter::GetAreaDetailPoints(int frame_width,int frame_height,std::string area_detail_string,Area* area_detail){
-  char str[100]="";
+  char str[1024]="";
   sscanf(area_detail_string.data(),"{%[^}]}",str);
   const char* split=":,";
   char* p;
@@ -249,7 +255,7 @@ int VSysParameter::GetAreaDetailPoints(int frame_width,int frame_height,std::str
         int len = sizeof(p);
         char* y = new char(len-3);
         y = p+1;
-        _point.y = (int)(atoi(y)*frame_height/NORMAL_HEIGHT);;
+        _point.y = (int)(atoi(y)*frame_height/NORMAL_HEIGHT);
         (*area_detail).push_back(_point);
         break;
       }
@@ -266,10 +272,11 @@ int VSysParameter::GetAreaDetailPoints(int frame_width,int frame_height,std::str
 int VSysParameter::GetAreaDetail(std::vector<AreaDetail>* area_details,int frame_width,int frame_height){
   cJSON* pJsonArray = cJSON_GetObjectItem(pJson,"area_detail");
   if(NULL==pJsonArray){
-    last_error_string = "area detail parse error.";
+    last_error_string = "no area detail or parse error.";
     return 0;
   }
   cJSON* list=pJsonArray->child;
+  cJSON* pSub = NULL;
   while(list!=NULL){
     AreaDetail area_detail;
     pSub = cJSON_GetObjectItem(list,"path_id");
@@ -281,27 +288,30 @@ int VSysParameter::GetAreaDetail(std::vector<AreaDetail>* area_details,int frame
     pSub = cJSON_GetObjectItem(list,"detail");
     Area _area;
     if(this->GetAreaDetailPoints(frame_width,frame_height,pSub->valuestring,&_area)){
-      area_detail.detail = _area;
+       area_detail.detail = _area;
     }
     (*area_details).push_back(area_detail);
     list = list->next;
   }
-  cJSON_Delete(list);
-  cJSON_Delete(pJsonArray);
   return 1;
 
 }
 
-void VSysParameter::PrintDoorDetail(DoorDetail& door_detail){
+void VSysParameter::PrintDoorDetail(std::vector<DoorDetail>& door_details){
 
   std::cout<<"=============== Doorline ==================="<<std::endl;
-  std::cout<<"path_id:"<<door_detail.path_id<<std::endl;
-  std::cout<<"type_id:"<<door_detail.type_id<<std::endl;
-  std::cout<<"cb_type:"<<door_detail.cb_type<<std::endl;
-  std::cout<<"path_detail:"<<std::endl;
-  std::cout<<"p1.x:"<<door_detail.detail.p1.x<<" p1.y:"<<door_detail.detail.p1.y<<std::endl;
-  std::cout<<"p2.x:"<<door_detail.detail.p2.x<<" p2.y:"<<door_detail.detail.p2.y<<std::endl;
-
+  for(unsigned int i=0;i<door_details.size();i++){
+    std::cout<<"path_id:"<<door_details[i].path_id<<std::endl;
+    std::cout<<"type_id:"<<door_details[i].type_id<<std::endl;
+    std::cout<<"cb_type:"<<door_details[i].cb_type<<std::endl;
+    std::cout<<"path_detail:"<<std::endl;
+    std::cout<<"p1.x:"<<door_details[i].detail.p1.x<<" p1.y:"<<door_details[i].detail.p1.y<<std::endl;
+    std::cout<<"p2.x:"<<door_details[i].detail.p2.x<<" p2.y:"<<door_details[i].detail.p2.y<<std::endl;
+    std::cout<<"-----------------------------------------"<<std::endl;
+  }
+  if(door_details.size()==0){
+    std::cout<<"no doorlines"<<std::endl;
+  }
 }
 
 void VSysParameter::PrintPathDetail(std::vector<PathDetail>& path_details){

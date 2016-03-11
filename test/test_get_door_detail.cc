@@ -7,14 +7,13 @@ int main(int argc,char* argv[]){
     std::cout<<sysparameter->GetLastError()<<std::endl;
   }
 
-  vidy::DoorDetail door_detail;
-  if(!sysparameter->GetDoorDetail(&door_detail)){
-    sysparameter->GetLastError();
+  std::vector<vidy::DoorDetail> door_details;
+  if(!sysparameter->GetDoorDetail(&door_details)){
+    std::cout<<sysparameter->GetLastError()<<std::endl;
     return 0;
+  }else{
+    sysparameter->PrintDoorDetail(door_details);
   }
-
-  sysparameter->PrintDoorDetail(door_detail);
-
   delete sysparameter;
 
   return 1; 

@@ -48,7 +48,7 @@ public:
   //@return 1: get door line success.
   //@return 0: get door line failed.
   //note. only one door line situation.
-  int GetDoorDetail(DoorDetail* door_detail,int frame_width=NORMAL_WIDTH,int frame_height=NORMAL_HEIGHT);
+  int GetDoorDetail(std::vector<DoorDetail>* door_details,int frame_width=NORMAL_WIDTH,int frame_height=NORMAL_HEIGHT);
 
   //@param frame_width,frame_height: width and height of frame, default values are 720(frame_height) and 1280(frame_width).
   //@return path_details: pathway details in JSON  that resized by frame size.
@@ -77,8 +77,8 @@ public:
     }
   }
 
-  //print result of door line.
-  void PrintDoorDetail(DoorDetail& door_detail);
+  //print result of function GetDoorDetail.
+  void PrintDoorDetail(std::vector<DoorDetail>& door_details);
   
   //print result of function GetPathDetail.
   void PrintPathDetail(std::vector<PathDetail>& path_details);
@@ -108,7 +108,6 @@ protected:
 
 private:
   cJSON* pJson;
-  cJSON* pSub;
   std::string last_error_string;
 
 }; // class VSysParameter
