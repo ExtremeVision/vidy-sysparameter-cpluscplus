@@ -2,6 +2,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 
 namespace vidy{
@@ -73,7 +74,7 @@ int VSysParameter::GetDoorDetailPoints(int frame_width,int frame_height,std::str
         int len = sizeof(p);
         char* x = new char(len-3);
         x = p+1;
-        _point.x = (int)(atoi(x)*frame_width/NORMAL_WIDTH);
+        _point.x = (int)(atoi(x)*frame_width/1280);
         break;
       }
       case 3:{
@@ -83,7 +84,7 @@ int VSysParameter::GetDoorDetailPoints(int frame_width,int frame_height,std::str
         int len = sizeof(p); 
         char* y = new char(len-3);
         y = p+1;
-        _point.y = (int)(atoi(y)*frame_height/NORMAL_HEIGHT);
+        _point.y = (int)(atoi(y)*frame_height/720);
         _point_num++;  
         switch(_point_num){
           case 1:
@@ -159,7 +160,7 @@ int VSysParameter::GetPathDetailPoints(int frame_width,int frame_height,std::str
         int len = sizeof(p);
         char* x = new char(len-3);
         x = p+1;
-        _point.x = (int)(atoi(x)*frame_width/NORMAL_WIDTH);
+        _point.x = (int)(atoi(x)*frame_width/1280);
         break;
       }
       case 3:{
@@ -169,7 +170,7 @@ int VSysParameter::GetPathDetailPoints(int frame_width,int frame_height,std::str
         int len = sizeof(p);
         char* y = new char(len-3);
         y = p+1;
-        _point.y = (int)(atoi(y)*frame_height/NORMAL_HEIGHT);
+        _point.y = (int)(atoi(y)*frame_height/720);
         switch(_point_num){
           case 1:
             (*path_detail).p1 = _point;
@@ -245,7 +246,7 @@ int VSysParameter::GetAreaDetailPoints(int frame_width,int frame_height,std::str
         int len = sizeof(p);
         char* x = new char(len-3);
         x = p+1;
-        _point.x = (int)(atoi(x)*frame_width/NORMAL_WIDTH);
+        _point.x = atoi(x)*frame_width/1280;
         break;
       }
       case 3:{
@@ -255,7 +256,7 @@ int VSysParameter::GetAreaDetailPoints(int frame_width,int frame_height,std::str
         int len = sizeof(p);
         char* y = new char(len-3);
         y = p+1;
-        _point.y = (int)(atoi(y)*frame_height/NORMAL_HEIGHT);
+        _point.y = atoi(y)*frame_height/720;
         (*area_detail).push_back(_point);
         break;
       }
@@ -295,6 +296,31 @@ int VSysParameter::GetAreaDetail(std::vector<AreaDetail>* area_details,int frame
   }
   return 1;
 
+}
+
+int VSysParameter::GetEntranceArea(std::vector<EntranceArea>* entrance_areas,int frame_width,int frame_height){
+  std::vector<DoorDetail> door_details;
+  this->GetDoorDetail(&door_details,frame_width,frame_height);
+  std::vector<AreaDetail> area_details;
+  this->GetAreaDetail(&area_details,frame_width,frame_height);
+  if(door_details.size()!=area_details.size()){
+    last_error_string = "door line number is not equal to area number";
+    return 0;
+  }
+  for(int i=0;i<door_details.size();i++){
+    int cb_type = door_details[i].cb_type;
+    EntranceArea entrance_area;
+    entrance_area.cb_type = cb_type;
+    entrance_area.doorline = door_details[i].detail;
+    for(int j=0;j<area_details.size();j++){
+      if(area_details[j].cb_type==cb_type){
+        entrance_area.area = area_details[j].detail;
+        break;
+      }
+    }
+    (*entrance_areas).push_back(entrance_area);
+  }
+  return 1;
 }
 
 void VSysParameter::PrintDoorDetail(std::vector<DoorDetail>& door_details){
@@ -347,6 +373,26 @@ void VSysParameter::PrintAreaDetail(std::vector<AreaDetail>& area_details){
   }
   if(area_details.size()==0){
     std::cout<<"no areas."<<std::endl;
+  }
+
+}
+
+void VSysParameter::PrintEntranceArea(std::vector<EntranceArea>& entrance_areas){
+
+  std::cout<<"============== Entrance Areas ==========="<<std::endl;
+  for(int i=0;i<entrance_areas.size();i++){
+    std::cout<<"cb_type:"<<entrance_areas[i].cb_type<<std::endl;
+    std::cout<<"door_line:"<<std::endl;
+    std::cout<<"p1.x:"<<entrance_areas[i].doorline.p1.x<<" p1.y:"<<entrance_areas[i].doorline.p1.y<<std::endl;
+    std::cout<<"p2.x:"<<entrance_areas[i].doorline.p2.x<<" p2.y:"<<entrance_areas[i].doorline.p2.y<<std::endl;
+    std::cout<<"area:"<<std::endl;
+    for(int j=0;j<entrance_areas[i].area.size();j++){
+      std::cout<<"p"<<j<<".x:"<<entrance_areas[i].area[j].x<<" p"<<j<<".y"<<entrance_areas[i].area[j].y<<std::endl;
+    }
+    std::cout<<"----------------------------------------"<<std::endl;
+  }
+  if(entrance_areas.size()==0){
+    std::cout<<"no entrance areas."<<std::endl;
   }
 
 }

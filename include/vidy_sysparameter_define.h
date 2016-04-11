@@ -56,6 +56,13 @@ struct AreaDetail{
   Area detail;
 };
 
+//----- define entrance area. (include door line and area) ---
+struct EntranceArea{
+  int cb_type;
+  Doorline doorline;
+  Area area;
+};
+
 } // namespace vidy
 
 #endif // VIDY_SYSPARAMETER_DEFINE_H_

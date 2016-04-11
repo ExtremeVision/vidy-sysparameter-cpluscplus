@@ -62,6 +62,12 @@ public:
   //@return 0: get area details failed.
   int GetAreaDetail(std::vector<AreaDetail>* area_details,int frame_width=NORMAL_WIDTH,int frame_height=NORMAL_HEIGHT);
 
+  //@param frame_width,frame_height: width and height of frame, default values area 720(frame_height) and 1280(frame_width).
+  //@return entrance_areas: combine both doorline and area that in the same cb_type as a entrance area.
+  //@return 1: get entrance area success.
+  //@return 0: get entrance area failed.
+  int GetEntranceArea(std::vector<EntranceArea>* entrance_areas,int frame_width=NORMAL_WIDTH,int frame_height=NORMAL_HEIGHT);
+
   //return: get last error description.
   inline std::string GetLastError(){
     return last_error_string;
@@ -85,6 +91,9 @@ public:
 
   //print result of function GetAreaDetail.
   void PrintAreaDetail(std::vector<AreaDetail>& area_details);
+
+  //print result of function GetEntranceArea.
+  void PrintEntranceArea(std::vector<EntranceArea>& entrance_areas);
 
 protected:
   //@param doorline_detail_string: "detail" of door line json.
